@@ -26,8 +26,8 @@ export const Game: React.FC<GameProps> = ({ config, levelId, onQuit }) => {
     time: 0,
     highScore: parseInt(localStorage.getItem('halloweenHighScore') || '0'),
   });
-  const [powerUp, setPowerUp] = useState<any>(null);
-  const [powerUpTimer, setPowerUpTimer] = useState(0);
+  const [powerUp] = useState<any>(null);
+  const [powerUpTimer] = useState(0);
 
   useEffect(() => {
     if (!canvasRef.current) return;

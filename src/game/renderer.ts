@@ -183,7 +183,6 @@ export class Renderer {
   drawEnemy(enemy: Enemy) {
     if (enemy.isDead) return;
 
-    const ctx = this.ctx;
     const screenX = enemy.x - this.scrollOffset;
 
     if (screenX + enemy.width < 0 || screenX > this.canvasWidth) return;
@@ -313,7 +312,7 @@ export class Renderer {
 
   private drawWitch(x: number, y: number, width: number, height: number) {
     const ctx = this.ctx;
-
+    console.log(height)
     // Hat
     ctx.fillStyle = '#000000';
     ctx.beginPath();
@@ -353,6 +352,7 @@ export class Renderer {
   private drawZombie(x: number, y: number, width: number, height: number) {
     const ctx = this.ctx;
 
+    console.log(width, height);
     // Head
     ctx.fillStyle = COLORS.zombie;
     ctx.fillRect(x + 8, y + 5, 20, 18);
@@ -440,7 +440,6 @@ export class Renderer {
   drawCollectible(collectible: Collectible) {
     if (collectible.collected) return;
 
-    const ctx = this.ctx;
     const screenX = collectible.x - this.scrollOffset;
 
     if (screenX + collectible.width < 0 || screenX > this.canvasWidth) return;

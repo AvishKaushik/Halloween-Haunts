@@ -1,9 +1,6 @@
 import type {
   Player,
   Enemy,
-  Platform,
-  Collectible,
-  PowerUp,
   Particle,
   FogParticle,
   GameState,
@@ -11,7 +8,7 @@ import type {
   GameConfig,
   Level,
 } from '../types/game';
-import { checkCollision, checkPlatformCollision, isOnGround } from '../utils/collision';
+import { checkCollision, checkPlatformCollision } from '../utils/collision';
 import { Renderer } from './renderer';
 import { sounds } from '../utils/sound';
 import {
@@ -19,7 +16,6 @@ import {
   PLAYER_SPEED,
   PLAYER_JUMP_POWER,
   GRAVITY,
-  CANVAS_WIDTH,
   SCORE_VALUES,
   INVINCIBILITY_DURATION,
   DIFFICULTY_SETTINGS,
