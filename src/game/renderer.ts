@@ -1,4 +1,4 @@
-import type { Player, Enemy, Platform, Collectible, PowerUp, Particle } from '../types/game';
+import type { Player, Enemy, Platform, Collectible, PowerUp, Particle, FogParticle } from '../types/game';
 import { COLORS } from '../utils/constants';
 
 export class Renderer {
@@ -20,6 +20,116 @@ export class Renderer {
   updateCanvasSize() {
     this.canvasWidth = this.ctx.canvas.width;
     this.canvasHeight = this.ctx.canvas.height;
+  }
+
+  drawFog(fog: FogParticle) {
+    const ctx = this.ctx;
+    const screenX = fog.x - this.scrollOffset;
+
+    ctx.save();
+    ctx.globalAlpha = fog.opacity;
+    ctx.fillStyle = '#9999aa';
+
+    // Create gradient for fog
+    const gradient = ctx.createRadialGradient(screenX, fog.y, 0, screenX, fog.y, fog.size);
+    gradient.addColorStop(0, 'rgba(150, 150, 170, 0.4)');
+    gradient.addColorStop(0.5, 'rgba(150, 150, 170, 0.2)');
+    gradient.addColorStop(1, 'rgba(150, 150, 170, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(screenX - fog.size, fog.y - fog.size, fog.size * 2, fog.size * 2);
+    ctx.restore();
+  }
+
+  drawVignette(width: number, height: number) {
+    const ctx = this.ctx;
+    const gradient = ctx.createRadialGradient(
+      width / 2,
+      height / 2,
+      Math.min(width, height) * 0.3,
+      width / 2,
+      height / 2,
+      Math.max(width, height) * 0.8
+    );
+
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  drawHauntedDecorations(groundY: number, scrollOffset: number) {
+    // Draw tombstones at intervals
+    for (let i = 300; i < 4000; i += 400) {
+      this.drawTombstone(i, groundY - 80, scrollOffset);
+    }
+
+    // Draw dead trees
+    for (let i = 500; i < 4000; i += 600) {
+      this.drawDeadTree(i, groundY - 150, scrollOffset);
+    }
+  }
+
+  private drawTombstone(x: number, y: number, scrollOffset: number) {
+    const ctx = this.ctx;
+    const screenX = x - scrollOffset;
+
+    if (screenX < -100 || screenX > this.canvasWidth + 100) return;
+
+    ctx.fillStyle = '#555566';
+    ctx.strokeStyle = '#333344';
+    ctx.lineWidth = 2;
+
+    // Tombstone body
+    ctx.beginPath();
+    ctx.arc(screenX + 20, y + 10, 15, Math.PI, 0);
+    ctx.lineTo(screenX + 35, y + 60);
+    ctx.lineTo(screenX + 5, y + 60);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // RIP text
+    ctx.fillStyle = '#222233';
+    ctx.font = 'bold 10px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('RIP', screenX + 20, y + 30);
+
+    // Cracks
+    ctx.strokeStyle = '#444455';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(screenX + 15, y + 35);
+    ctx.lineTo(screenX + 18, y + 45);
+    ctx.stroke();
+  }
+
+  private drawDeadTree(x: number, y: number, scrollOffset: number) {
+    const ctx = this.ctx;
+    const screenX = x - scrollOffset;
+
+    if (screenX < -100 || screenX > this.canvasWidth + 100) return;
+
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 4;
+
+    // Trunk
+    ctx.beginPath();
+    ctx.moveTo(screenX, y + 150);
+    ctx.lineTo(screenX, y + 50);
+    ctx.stroke();
+
+    // Branches
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(screenX, y + 70);
+    ctx.lineTo(screenX - 20, y + 40);
+    ctx.moveTo(screenX, y + 80);
+    ctx.lineTo(screenX + 15, y + 50);
+    ctx.moveTo(screenX, y + 100);
+    ctx.lineTo(screenX - 15, y + 70);
+    ctx.stroke();
   }
 
   drawPlayer(player: Player) {
@@ -112,12 +222,15 @@ export class Renderer {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Evil eyes
+    // Evil glowing eyes
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ff0000';
     ctx.fillStyle = '#ff0000';
     ctx.beginPath();
     ctx.arc(x + 10, y + 12, 3, 0, Math.PI * 2);
     ctx.arc(x + 25, y + 12, 3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   private drawBat(x: number, y: number, width: number, height: number) {
@@ -145,12 +258,15 @@ export class Renderer {
     ctx.closePath();
     ctx.fill();
 
-    // Eyes
+    // Glowing eyes
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ffff00';
     ctx.fillStyle = '#ffff00';
     ctx.beginPath();
     ctx.arc(x + width / 2 - 3, y + height / 2, 2, 0, Math.PI * 2);
     ctx.arc(x + width / 2 + 3, y + height / 2, 2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   private drawSkeleton(x: number, y: number, width: number, height: number) {
@@ -163,14 +279,25 @@ export class Renderer {
     ctx.fill();
     ctx.fillRect(x + 7, y + 20, 20, 15);
 
-    // Eye sockets
+    // Eye sockets with glowing red eyes
     ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.arc(x + 12, y + 12, 4, 0, Math.PI * 2);
     ctx.arc(x + 23, y + 12, 4, 0, Math.PI * 2);
     ctx.fill();
 
+    // Glowing red eyes in sockets
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ff0000';
+    ctx.fillStyle = '#ff0000';
+    ctx.beginPath();
+    ctx.arc(x + 12, y + 12, 2, 0, Math.PI * 2);
+    ctx.arc(x + 23, y + 12, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
     // Nose
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.moveTo(x + 17.5, y + 18);
     ctx.lineTo(x + 15, y + 22);
@@ -203,12 +330,15 @@ export class Renderer {
     ctx.arc(x + width / 2, y + 24, 10, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eyes
+    // Glowing green eyes
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#00ff00';
     ctx.fillStyle = '#00ff00';
     ctx.beginPath();
     ctx.arc(x + width / 2 - 4, y + 22, 2, 0, Math.PI * 2);
     ctx.arc(x + width / 2 + 4, y + 22, 2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
 
     // Nose
     ctx.fillStyle = COLORS.witch;
@@ -227,15 +357,18 @@ export class Renderer {
     ctx.fillStyle = COLORS.zombie;
     ctx.fillRect(x + 8, y + 5, 20, 18);
 
-    // Eyes (misaligned)
+    // Eyes (misaligned) with eerie white glow
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x + 11, y + 10, 5, 6);
     ctx.fillRect(x + 20, y + 12, 5, 6);
 
-    // Pupils
-    ctx.fillStyle = '#000000';
+    // Pupils with red glow
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ff6666';
+    ctx.fillStyle = '#660000';
     ctx.fillRect(x + 13, y + 12, 2, 3);
     ctx.fillRect(x + 22, y + 14, 2, 3);
+    ctx.shadowBlur = 0;
 
     // Mouth
     ctx.strokeStyle = '#000000';
@@ -260,17 +393,17 @@ export class Renderer {
 
     if (screenX + platform.width < 0 || screenX > this.canvasWidth) return;
 
-    // Platform base
-    ctx.fillStyle = platform.type === 'breakable' ? '#996633' : '#663300';
+    // Platform base - darker, more ominous
+    ctx.fillStyle = platform.type === 'breakable' ? '#553322' : '#442200';
     ctx.fillRect(screenX, platform.y, platform.width, platform.height);
 
-    // Grass/moss on top
-    ctx.fillStyle = platform.type === 'ground' ? '#33cc33' : '#669966';
+    // Dead grass/moss on top - darker green
+    ctx.fillStyle = platform.type === 'ground' ? '#224411' : '#335522';
     ctx.fillRect(screenX, platform.y - 5, platform.width, 5);
 
-    // Details
+    // Spooky details
     if (platform.type === 'breakable') {
-      ctx.strokeStyle = '#663300';
+      ctx.strokeStyle = '#331100';
       ctx.lineWidth = 2;
       for (let i = 20; i < platform.width; i += 30) {
         ctx.beginPath();
@@ -278,11 +411,29 @@ export class Renderer {
         ctx.lineTo(screenX + i, platform.y + platform.height);
         ctx.stroke();
       }
+      // Cracks
+      ctx.strokeStyle = '#221100';
+      ctx.lineWidth = 1;
+      for (let i = 10; i < platform.width; i += 40) {
+        ctx.beginPath();
+        ctx.moveTo(screenX + i, platform.y + 5);
+        ctx.lineTo(screenX + i + 10, platform.y + 15);
+        ctx.stroke();
+      }
     } else {
-      ctx.fillStyle = '#552200';
+      ctx.fillStyle = '#331100';
       for (let i = 0; i < platform.width; i += 20) {
         ctx.fillRect(screenX + i, platform.y + 5, 2, 15);
       }
+    }
+
+    // Add eerie glow from below (ground only)
+    if (platform.type === 'ground') {
+      const gradient = ctx.createLinearGradient(0, platform.y, 0, platform.y + platform.height);
+      gradient.addColorStop(0, 'rgba(102, 34, 0, 0)');
+      gradient.addColorStop(1, 'rgba(51, 17, 0, 0.3)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(screenX, platform.y, platform.width, platform.height);
     }
   }
 
@@ -470,14 +621,50 @@ export class Renderer {
 
     ctx.fillStyle = particle.color;
     ctx.globalAlpha = particle.life / particle.maxLife;
-    ctx.fillRect(screenX - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+
+    // Different rendering for ember particles
+    if (particle.type === 'ember') {
+      // Glowing embers
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = particle.color;
+      ctx.beginPath();
+      ctx.arc(screenX, particle.y, particle.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillRect(screenX - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+    }
+
     ctx.globalAlpha = 1;
   }
 
-  drawBackground(backgroundColor: string, canvasWidth: number, canvasHeight: number) {
+  drawBackground(backgroundColor: string, canvasWidth: number, canvasHeight: number, lightningFlash: boolean = false) {
     const ctx = this.ctx;
-    ctx.fillStyle = backgroundColor;
+
+    if (lightningFlash) {
+      // Lightning flash - brighten everything
+      ctx.fillStyle = '#4d4d66';
+    } else {
+      // Darker, more ominous background
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+      gradient.addColorStop(0, '#0d001a');
+      gradient.addColorStop(0.5, backgroundColor);
+      gradient.addColorStop(1, '#000000');
+      ctx.fillStyle = gradient;
+    }
+
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Add stars that twinkle
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 50; i++) {
+      const x = (i * 137.5) % canvasWidth;
+      const y = (i * 73.2) % (canvasHeight / 2);
+      const brightness = Math.sin(Date.now() / 500 + i) * 0.3 + 0.7;
+      ctx.globalAlpha = brightness;
+      ctx.fillRect(x, y, 2, 2);
+    }
+    ctx.globalAlpha = 1;
   }
 
   drawFinishFlag(finishX: number, groundY: number) {
@@ -514,18 +701,35 @@ export class Renderer {
     ctx.fillText('FINISH', screenX + 30, groundY - 160);
   }
 
-  drawMoon() {
+  drawMoon(lightningFlash: boolean = false) {
     const ctx = this.ctx;
-    ctx.fillStyle = '#ffff99';
-    ctx.shadowBlur = 30;
-    ctx.shadowColor = '#ffff99';
-    ctx.beginPath();
+
+    // Blood moon effect
+    const moonColor = lightningFlash ? '#ffff99' : '#ff6644';
+    const glowColor = lightningFlash ? '#ffff99' : '#ff3322';
+
+    ctx.fillStyle = moonColor;
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = glowColor;
+
     // Position moon relative to canvas size (right side, upper area)
     const moonX = this.canvasWidth * 0.85;
     const moonY = this.canvasHeight * 0.15;
     const moonRadius = Math.min(this.canvasWidth, this.canvasHeight) * 0.05;
+
+    ctx.beginPath();
     ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
     ctx.fill();
+
+    // Add eerie glow ring
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius + 10, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
   }
 }

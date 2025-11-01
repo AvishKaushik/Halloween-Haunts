@@ -52,7 +52,7 @@ export const levels: Level[] = [
   {
     id: 1,
     name: 'Haunted Graveyard',
-    backgroundColor: '#1a0033',
+    backgroundColor: '#0d001a',
     gravity: 0.5,
     finishX: 3950,
     platforms: [
@@ -114,7 +114,7 @@ export const levels: Level[] = [
   {
     id: 2,
     name: 'Spooky Forest',
-    backgroundColor: '#0d1a1a',
+    backgroundColor: '#0a0f0a',
     gravity: 0.5,
     finishX: 3950,
     platforms: [
@@ -180,7 +180,7 @@ export const levels: Level[] = [
   {
     id: 3,
     name: "Witch's Castle",
-    backgroundColor: '#1a0a2e',
+    backgroundColor: '#0f0a1a',
     gravity: 0.5,
     finishX: 3850,
     platforms: [

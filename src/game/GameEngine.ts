@@ -5,6 +5,7 @@ import type {
   Collectible,
   PowerUp,
   Particle,
+  FogParticle,
   GameState,
   GameStats,
   GameConfig,
@@ -33,6 +34,7 @@ export class GameEngine {
   private currentLevel: Level;
   private scrollOffset: number = 0;
   private particles: Particle[] = [];
+  private fogParticles: FogParticle[] = [];
 
   private keys: Record<string, boolean> = {};
   private gameState: GameState = 'menu';
@@ -42,6 +44,11 @@ export class GameEngine {
   private animationFrameId: number | null = null;
   private lastTime: number = 0;
   private elapsedTime: number = 0;
+
+  // Spooky atmospheric effects
+  private screenShake: { x: number; y: number; intensity: number } = { x: 0, y: 0, intensity: 0 };
+  private lightningTimer: number = 0;
+  private lightningFlash: boolean = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -170,6 +177,8 @@ export class GameEngine {
     this.updateCollectibles();
     this.updatePowerUps();
     this.updateParticles();
+    this.updateFogParticles();
+    this.updateAtmosphericEffects();
     this.updateCamera();
     this.checkLevelComplete();
   }
@@ -376,6 +385,85 @@ export class GameEngine {
     });
   }
 
+  private updateFogParticles() {
+    // Create new fog particles periodically
+    if (Math.random() < 0.3) {
+      this.createFogParticle();
+    }
+
+    // Update existing fog particles
+    this.fogParticles = this.fogParticles.filter((fog) => {
+      fog.x += fog.velocityX;
+      fog.y += fog.velocityY;
+      fog.lifeTime--;
+      fog.opacity = (fog.lifeTime / 300) * 0.3; // Fade out
+      return fog.lifeTime > 0;
+    });
+  }
+
+  private createFogParticle() {
+    const fog: FogParticle = {
+      x: this.scrollOffset + Math.random() * this.canvas.width,
+      y: this.currentLevel.platforms[0].y - 50 - Math.random() * 200,
+      velocityX: -0.2 + Math.random() * 0.4,
+      velocityY: -0.1 + Math.random() * 0.2,
+      size: 50 + Math.random() * 100,
+      opacity: 0.1 + Math.random() * 0.2,
+      lifeTime: 200 + Math.random() * 100,
+    };
+    this.fogParticles.push(fog);
+  }
+
+  private updateAtmosphericEffects() {
+    // Screen shake decay
+    if (this.screenShake.intensity > 0) {
+      this.screenShake.x = (Math.random() - 0.5) * this.screenShake.intensity;
+      this.screenShake.y = (Math.random() - 0.5) * this.screenShake.intensity;
+      this.screenShake.intensity *= 0.9;
+      if (this.screenShake.intensity < 0.1) {
+        this.screenShake.intensity = 0;
+        this.screenShake.x = 0;
+        this.screenShake.y = 0;
+      }
+    }
+
+    // Random lightning flashes
+    this.lightningTimer++;
+    if (this.lightningTimer > 300 + Math.random() * 300) {
+      this.lightningFlash = true;
+      this.lightningTimer = 0;
+      setTimeout(() => {
+        this.lightningFlash = false;
+      }, 100);
+    }
+
+    // Create floating embers occasionally
+    if (Math.random() < 0.05) {
+      this.createEmber();
+    }
+  }
+
+  private createEmber() {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 0.5 + 0.5;
+
+    this.particles.push({
+      x: this.scrollOffset + Math.random() * this.canvas.width,
+      y: this.currentLevel.platforms[0].y - Math.random() * 100,
+      velocityX: Math.cos(angle) * speed,
+      velocityY: -Math.abs(Math.sin(angle) * speed) - 1,
+      life: 60 + Math.random() * 60,
+      maxLife: 120,
+      color: Math.random() > 0.5 ? '#ff6600' : '#ff3300',
+      size: 2 + Math.random() * 3,
+      type: 'ember',
+    });
+  }
+
+  private triggerScreenShake(intensity: number = 10) {
+    this.screenShake.intensity = intensity;
+  }
+
   private updateCamera() {
     const centerX = this.canvas.width / 2.5; // Keep player slightly left of center
 
@@ -397,6 +485,9 @@ export class GameEngine {
     this.onStatsChange(this.stats);
 
     if (this.config.soundEnabled) sounds.damage();
+
+    // Trigger screen shake on damage
+    this.triggerScreenShake(15);
 
     if (this.player.lives <= 0) {
       this.gameOver();
@@ -483,15 +574,30 @@ export class GameEngine {
     // Update renderer canvas size in case of window resize
     this.renderer.updateCanvasSize();
 
-    // Clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    // Apply screen shake
+    this.ctx.save();
+    this.ctx.translate(this.screenShake.x, this.screenShake.y);
 
-    // Draw background
-    this.renderer.drawBackground(this.currentLevel.backgroundColor, this.canvas.width, this.canvas.height);
-    this.renderer.drawMoon();
+    // Clear canvas
+    this.ctx.clearRect(-this.screenShake.x, -this.screenShake.y, this.canvas.width, this.canvas.height);
+
+    // Draw background with lightning effect
+    this.renderer.drawBackground(
+      this.currentLevel.backgroundColor,
+      this.canvas.width,
+      this.canvas.height,
+      this.lightningFlash
+    );
+    this.renderer.drawMoon(this.lightningFlash);
+
+    // Draw fog layer (bottom layer)
+    this.fogParticles.forEach((fog) => this.renderer.drawFog(fog));
 
     // Draw finish flag
     this.renderer.drawFinishFlag(this.currentLevel.finishX, this.currentLevel.platforms[0].y);
+
+    // Draw tombstones and decorations
+    this.renderer.drawHauntedDecorations(this.currentLevel.platforms[0].y, this.scrollOffset);
 
     // Draw game objects
     this.currentLevel.platforms.forEach((platform) => this.renderer.drawPlatform(platform));
@@ -502,6 +608,11 @@ export class GameEngine {
 
     // Draw player
     this.renderer.drawPlayer(this.player);
+
+    // Draw vignette effect (darkened edges)
+    this.renderer.drawVignette(this.canvas.width, this.canvas.height);
+
+    this.ctx.restore();
   }
 
   getStats(): GameStats {

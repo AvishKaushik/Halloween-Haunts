@@ -4,10 +4,13 @@
   left: 10px;
   right: 10px;
   z-index: 10;
-  color: #ff6600;
+  color: #ff3300;
   font-weight: bold;
-  text-shadow: 2px 2px 4px black;
+  text-shadow:
+    0 0 10px #ff3300,
+    2px 2px 8px rgba(0, 0, 0, 0.9);
   pointer-events: none;
+  filter: drop-shadow(0 0 5px #ff3300);
 }
 
 .hud-top {
@@ -29,12 +32,36 @@
 }
 
 .hud-label {
-  color: #ff9933;
+  color: #ff6633;
+  text-shadow: 0 0 8px #ff3300;
+  animation: labelPulse 2s ease-in-out infinite;
+}
+
+@keyframes labelPulse {
+  0%, 100% {
+    text-shadow: 0 0 8px #ff3300;
+  }
+  50% {
+    text-shadow: 0 0 15px #ff3300, 0 0 20px #ff0000;
+  }
 }
 
 .hud-value {
   color: #ffcc00;
   font-size: 24px;
+  text-shadow:
+    0 0 10px #ffcc00,
+    0 0 20px #ff9900;
+  animation: valuePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes valuePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .hearts {
@@ -46,14 +73,26 @@
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   padding: 10px 20px;
   border-radius: 20px;
-  border: 2px solid;
+  border: 3px solid;
   display: flex;
   align-items: center;
   gap: 15px;
-  animation: pulse 0.5s ease-in-out infinite alternate;
+  animation: powerUpPulse 0.5s ease-in-out infinite alternate;
+  box-shadow: 0 0 20px currentColor, inset 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes powerUpPulse {
+  from {
+    transform: translateX(-50%) scale(1);
+    box-shadow: 0 0 20px currentColor, inset 0 0 10px rgba(255, 255, 255, 0.2);
+  }
+  to {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: 0 0 30px currentColor, inset 0 0 15px rgba(255, 255, 255, 0.3);
+  }
 }
 
 .power-up-invincibility {
@@ -81,11 +120,25 @@
   color: #ffffff;
 }
 
-@keyframes pulse {
-  from {
-    transform: translateX(-50%) scale(1);
+.hearts {
+  animation: heartBeat 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px #ff0000);
+}
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
   }
-  to {
-    transform: translateX(-50%) scale(1.05);
+  10% {
+    transform: scale(1.1);
+  }
+  20% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.1);
+  }
+  40% {
+    transform: scale(1);
   }
 }

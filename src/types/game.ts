@@ -69,6 +69,17 @@ export interface Particle {
   maxLife: number;
   color: string;
   size: number;
+  type?: 'normal' | 'fog' | 'ember';
+}
+
+export interface FogParticle {
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+  size: number;
+  opacity: number;
+  lifeTime: number;
 }
 
 export type EnemyType = 'ghost' | 'bat' | 'skeleton' | 'witch' | 'zombie';

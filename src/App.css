@@ -5,13 +5,23 @@
 }
 
 body {
-  background: linear-gradient(to bottom, #0d001a, #1a0033, #330066);
+  background: linear-gradient(to bottom, #000000, #0d001a, #1a0033, #0d001a, #000000);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  animation: backgroundPulse 10s ease-in-out infinite;
+}
+
+@keyframes backgroundPulse {
+  0%, 100% {
+    background: linear-gradient(to bottom, #000000, #0d001a, #1a0033, #0d001a, #000000);
+  }
+  50% {
+    background: linear-gradient(to bottom, #0a0005, #1a0a2e, #2d1b4e, #1a0a2e, #0a0005);
+  }
 }
 
 .app {
